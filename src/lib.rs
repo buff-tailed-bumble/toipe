@@ -126,24 +126,27 @@ impl<'a> Toipe {
         Ok(toipe)
     }
 
+    fn display_hint(&mut self) -> Result<()> {
+        if !self.config.no_hint {
+            self.tui.display_lines_bottom(&[&[
+                Text::from("ctrl-r").with_color(color::Blue),
+                Text::from(" to restart, ").with_faint(),
+                Text::from("ctrl-c").with_color(color::Blue),
+                Text::from(" to quit ").with_faint(),
+            ]])?;
+        }
+        Ok(())
+    }
+
     /// Make the terminal ready for the next typing test.
     ///
     /// Clears the screen, generates new words and displays them on the
     /// UI.
     pub fn restart(&mut self) -> Result<()> {
         self.tui.reset_screen()?;
-
         self.words = self.word_selector.new_words(self.config.num_words)?;
-
-        self.tui.display_lines_bottom(&[&[
-            Text::from("ctrl-r").with_color(color::Blue),
-            Text::from(" to restart, ").with_faint(),
-            Text::from("ctrl-c").with_color(color::Blue),
-            Text::from(" to quit ").with_faint(),
-        ]])?;
-
+        self.display_hint()?;
         self.show_words()?;
-
         Ok(())
     }
 
@@ -201,7 +204,7 @@ impl<'a> Toipe {
                 Key::Ctrl('c') => {
                     return Ok(TestStatus::Quit);
                 }
-                Key::Ctrl('r') => {
+                Key::Ctrl('r') | Key::Char('\n') => {
                     return Ok(TestStatus::Restart);
                 }
                 Key::Ctrl('w') => {
@@ -333,12 +336,7 @@ impl<'a> Toipe {
                 Text::from(" (words per minute)"),
             ],
         ])?;
-        self.tui.display_lines_bottom(&[&[
-            Text::from("ctrl-r").with_color(color::Blue),
-            Text::from(" to restart, ").with_faint(),
-            Text::from("ctrl-c").with_color(color::Blue),
-            Text::from(" to quit ").with_faint(),
-        ]])?;
+        self.display_hint()?;
         // no cursor on results page
         self.tui.hide_cursor()?;
 
@@ -348,7 +346,7 @@ impl<'a> Toipe {
         while to_restart.is_none() {
             match keys.next().unwrap()? {
                 // press ctrl + 'r' to restart
-                Key::Ctrl('r') => to_restart = Some(true),
+                Key::Ctrl('r') | Key::Char('\n') => to_restart = Some(true),
                 // press ctrl + 'c' to quit
                 Key::Ctrl('c') => to_restart = Some(false),
                 _ => {}

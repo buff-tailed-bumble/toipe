@@ -22,17 +22,24 @@ pub struct ToipeConfig {
     /// Word list name.
     #[clap(arg_enum, short, long, default_value_t = BuiltInWordlist::Top250)]
     pub wordlist: BuiltInWordlist,
+
     /// Path to custom word list file.
     ///
     /// This argument cannot be used along with `-w`/`--wordlist`
     #[clap(short = 'f', long = "file", conflicts_with = "wordlist")]
     pub wordlist_file: Option<String>,
+
     /// Number of words to show on each test.
     #[clap(short, long, default_value_t = 30)]
     pub num_words: usize,
+
     /// Whether to include punctuation
     #[clap(short, long)]
     pub punctuation: bool,
+
+    /// Whether to show hint for controls at the bottom of the screen
+    #[clap(long)]
+    pub no_hint: bool,
 }
 
 impl ToipeConfig {
