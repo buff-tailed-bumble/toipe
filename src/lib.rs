@@ -13,6 +13,7 @@
 pub mod config;
 pub mod results;
 pub mod textgen;
+pub mod trie;
 pub mod tui;
 pub mod wordlists;
 
