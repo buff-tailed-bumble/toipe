@@ -25,7 +25,9 @@ use config::ToipeConfig;
 use results::ToipeResults;
 use termion::input::Keys;
 use termion::{color, event::Key, input::TermRead};
-use textgen::{PunctuatedWordSelector, RawWordSelector, WordSelector};
+use textgen::{
+    NumberGeneratingWordSelector, PunctuatedWordSelector, RawWordSelector, WordSelector,
+};
 use tui::{Text, ToipeTui};
 use wordlists::{BuiltInWordlist, OS_WORDLIST_PATH};
 
@@ -106,11 +108,19 @@ impl<'a> Toipe {
             return Err(ToipeError::from("Undefined word list or path.".to_owned()))?;
         };
 
+        if config.numbers {
+            word_selector = Box::new(NumberGeneratingWordSelector::from_word_selector(
+                word_selector,
+                config.number_chance,
+                config.number_max,
+            ));
+        }
+
         if config.punctuation {
             word_selector = Box::new(PunctuatedWordSelector::from_word_selector(
                 word_selector,
                 config.punctuation_chance,
-            ))
+            ));
         }
 
         let mut toipe = Toipe {

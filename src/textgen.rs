@@ -94,6 +94,37 @@ impl<T: Seek + io::Read> WordSelector for RawWordSelector<T> {
     }
 }
 
+pub struct NumberGeneratingWordSelector {
+    selector: Box<dyn WordSelector>,
+    number_chance: f64,
+    number_max: u64,
+}
+
+impl NumberGeneratingWordSelector {
+    pub fn from_word_selector(
+        word_selector: Box<dyn WordSelector>,
+        number_chance: f64,
+        number_max: u64,
+    ) -> Self {
+        Self {
+            selector: word_selector,
+            number_chance,
+            number_max,
+        }
+    }
+}
+
+impl WordSelector for NumberGeneratingWordSelector {
+    fn new_word(&mut self) -> Result<String, io::Error> {
+        let mut rng = rand::thread_rng();
+        if !rng.gen_bool(self.number_chance) {
+            return self.selector.new_word();
+        }
+        let num = rng.gen_range(0..self.number_max);
+        Ok(num.to_string())
+    }
+}
+
 /// Wraps another word selector, taking words from it and adding punctuation to the end of or
 /// around words with a configurable chance. Will capitalize the next word when an end-of-sentence
 /// punctuation mark is used.

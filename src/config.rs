@@ -41,6 +41,18 @@ pub struct ToipeConfig {
     #[clap(long, default_value_t = 0.15)]
     pub punctuation_chance: f64,
 
+    /// Whether to include numbers
+    #[clap(short = 'N', long)]
+    pub numbers: bool,
+
+    /// Probability of generating a number (per word)
+    #[clap(long, default_value_t = 0.15)]
+    pub number_chance: f64,
+
+    /// Maximum value of the generated numbers
+    #[clap(long, default_value_t = 9999)]
+    pub number_max: u64,
+
     /// Whether to show hint for controls at the bottom of the screen
     #[clap(long)]
     pub no_hint: bool,
