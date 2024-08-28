@@ -37,6 +37,10 @@ pub struct ToipeConfig {
     #[clap(short, long)]
     pub punctuation: bool,
 
+    /// Probability of generating punctuation (per word)
+    #[clap(long, default_value_t = 0.15)]
+    pub punctuation_chance: f64,
+
     /// Whether to show hint for controls at the bottom of the screen
     #[clap(long)]
     pub no_hint: bool,
