@@ -209,7 +209,18 @@ impl<'a> Toipe {
                 }
                 Key::Ctrl('w') => {
                     // delete last word
-                    while !matches!(input.last(), Some(' ') | None) {
+                    if input.len() > 0
+                        && matches!(original_text.get(input.len() - 1), Some(' ') | None)
+                    {
+                        if input.pop().is_some() {
+                            self.tui.replace_text(
+                                Text::from(original_text[input.len()]).with_faint(),
+                            )?;
+                        }
+                    }
+                    while input.len() > 0
+                        && !matches!(original_text.get(input.len() - 1), Some(' ') | None)
+                    {
                         if input.pop().is_some() {
                             self.tui.replace_text(
                                 Text::from(original_text[input.len()]).with_faint(),
