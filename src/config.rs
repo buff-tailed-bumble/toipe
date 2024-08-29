@@ -56,12 +56,18 @@ pub struct ToipeConfig {
     /// Whether to show hint for controls at the bottom of the screen
     #[clap(long)]
     pub no_hint: bool,
+
+    /// Whether to allow whitespace in words
+    #[clap(long)]
+    pub preserve_whitespace: bool,
 }
 
 impl ToipeConfig {
     /// Name of the text used for typing test
     pub fn text_name(&self) -> String {
-        if let Some(wordlist_file) = &self.wordlist_file {
+        if !termion::is_tty(&std::io::stdin().lock()) {
+            "stdin".to_string()
+        } else if let Some(wordlist_file) = &self.wordlist_file {
             format!("custom file `{}`", wordlist_file)
         } else {
             if let Some(possible_value) = self.wordlist.to_possible_value() {

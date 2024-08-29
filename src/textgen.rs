@@ -2,9 +2,7 @@
 //! test.
 
 use std::collections::VecDeque;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, Cursor, Seek};
-use std::path::PathBuf;
+use std::io;
 
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -13,18 +11,19 @@ use rand::prelude::ThreadRng;
 
 use crate::trie::Trie;
 
-pub struct RawWordSelector<T: Seek + io::Read> {
+pub struct RawWordSelector {
     trie: Trie,
-    phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: Seek + io::Read> RawWordSelector<T> {
-    pub fn new(reader: BufReader<T>) -> Result<Self, io::Error> {
+impl RawWordSelector {
+    pub fn from_iter<T: Iterator<Item = Result<String, io::Error>>>(
+        iter: T,
+    ) -> Result<Self, io::Error> {
         let mut trie = Trie::new();
-        for line in reader.lines() {
-            match line {
-                Ok(string) => {
-                    if let Err(err) = trie.insert(&string.to_ascii_lowercase()) {
+        for elem in iter {
+            match elem {
+                Ok(word) => {
+                    if let Err(err) = trie.insert(&word.to_ascii_lowercase()) {
                         return Err(err.into());
                     }
                 }
@@ -35,10 +34,7 @@ impl<T: Seek + io::Read> RawWordSelector<T> {
         }
 
         trie.compress()
-            .map(|t| Self {
-                trie: t,
-                phantom: std::marker::PhantomData,
-            })
+            .map(|t| Self { trie: t })
             .map_err(|e| e.into())
     }
 
@@ -46,33 +42,6 @@ impl<T: Seek + io::Read> RawWordSelector<T> {
         self.trie
             .sample(rng.gen_range(0..self.trie.num_words()))
             .map_err(|e| e.into())
-    }
-}
-
-impl RawWordSelector<File> {
-    /// Create from a file at a path given by a [`PathBuf`].
-    ///
-    /// Please ensure that assumptions defined at
-    /// [`RawWordSelector#assumptions`] are valid for this file.
-    pub fn from_path(word_list_path: PathBuf) -> Result<Self, io::Error> {
-        let file = File::open(word_list_path)?;
-
-        let reader = BufReader::new(file);
-
-        Self::new(reader)
-    }
-}
-
-impl RawWordSelector<Cursor<String>> {
-    /// Create from a String representing the word list file.
-    ///
-    /// Please ensure that assumptions defined at
-    /// [`RawWordSelector#assumptions`] are valid for the contents.
-    pub fn from_string(word_list: String) -> Result<Self, io::Error> {
-        let cursor = Cursor::new(word_list);
-        let reader = BufReader::new(cursor);
-
-        RawWordSelector::new(reader)
     }
 }
 
@@ -87,7 +56,7 @@ pub trait WordSelector {
     }
 }
 
-impl<T: Seek + io::Read> WordSelector for RawWordSelector<T> {
+impl WordSelector for RawWordSelector {
     fn new_word(&mut self) -> Result<String, io::Error> {
         let mut rng = rand::thread_rng();
         Ok(self.new_word_raw(&mut rng)?.to_ascii_lowercase())

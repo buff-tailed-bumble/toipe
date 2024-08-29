@@ -14,24 +14,23 @@ pub mod config;
 pub mod results;
 pub mod textgen;
 pub mod trie;
+pub mod tty;
 pub mod tui;
 pub mod wordlists;
+pub mod wordstream;
 
-use std::io::StdinLock;
-use std::path::PathBuf;
 use std::time::Instant;
 
 use config::ToipeConfig;
 use results::ToipeResults;
-use termion::input::Keys;
-use termion::{color, event::Key, input::TermRead};
+use termion::input::{Keys, TermRead};
+use termion::{color, event::Key};
 use textgen::{
     NumberGeneratingWordSelector, PunctuatedWordSelector, RawWordSelector, WordSelector,
 };
 use tui::{Text, ToipeTui};
-use wordlists::{BuiltInWordlist, OS_WORDLIST_PATH};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 /// Typing test terminal UI and logic.
 pub struct Toipe {
@@ -79,34 +78,10 @@ impl<'a> Toipe {
     /// Initializes the word selector.
     /// Also invokes [`Toipe::restart()`].
     pub fn new(config: ToipeConfig) -> Result<Self> {
-        let mut word_selector: Box<dyn WordSelector> = if let Some(wordlist_path) =
-            config.wordlist_file.clone()
-        {
-            Box::new(
-                RawWordSelector::from_path(PathBuf::from(wordlist_path.clone())).with_context(
-                    || format!("reading the word list from given path '{}'", wordlist_path),
-                )?,
-            )
-        } else if let Some(word_list) = config.wordlist.contents() {
-            Box::new(
-                RawWordSelector::from_string(word_list.to_string()).with_context(|| {
-                    format!("reading the built-in word list {:?}", config.wordlist)
-                })?,
-            )
-        } else if let BuiltInWordlist::OS = config.wordlist {
-            Box::new(
-                RawWordSelector::from_path(PathBuf::from(OS_WORDLIST_PATH)).with_context(|| {
-                    format!(
-                        "reading from the OS wordlist at path '{}'. See https://en.wikipedia.org/wiki/Words_(Unix) for more info on this file and how it can be installed.",
-                        OS_WORDLIST_PATH
-                    )
-                })?,
-            )
-        } else {
-            // this should never happen!
-            // TODO: somehow enforce this at compile time?
-            return Err(ToipeError::from("Undefined word list or path.".to_owned()))?;
-        };
+        let stream = wordstream::WordStream::new(&config)?;
+
+        let mut word_selector: Box<dyn WordSelector> =
+            Box::new(RawWordSelector::from_iter(stream.into_iter())?);
 
         if config.numbers {
             word_selector = Box::new(NumberGeneratingWordSelector::from_word_selector(
@@ -172,7 +147,7 @@ impl<'a> Toipe {
     /// If the test completes successfully, returns a boolean indicating
     /// whether the user wants to do another test and the
     /// [`ToipeResults`] for this test.
-    pub fn test(&mut self, stdin: StdinLock<'a>) -> Result<(bool, ToipeResults)> {
+    pub fn test<T: std::io::Read>(&mut self, mut keys: Keys<T>) -> Result<(bool, ToipeResults)> {
         let mut input = Vec::<char>::new();
         let original_text = self
             .text
@@ -275,8 +250,6 @@ impl<'a> Toipe {
             Ok(TestStatus::NotDone)
         };
 
-        let mut keys = stdin.keys();
-
         // read first key
         let key = keys.next().unwrap()?;
         // start the timer
@@ -329,10 +302,20 @@ impl<'a> Toipe {
         Ok((to_restart, results))
     }
 
-    fn display_results(
+    pub fn run(&mut self, tty: &mut tty::Tty) -> Result<()> {
+        while tty
+            .map(|source| self.test(source.keys()))
+            .map_or(false, |(restart, _)| restart)
+        {
+            self.restart()?;
+        }
+        Ok(())
+    }
+
+    fn display_results<T: std::io::Read>(
         &mut self,
         results: ToipeResults,
-        mut keys: Keys<StdinLock>,
+        mut keys: Keys<T>,
     ) -> Result<bool> {
         self.tui.reset_screen()?;
 
