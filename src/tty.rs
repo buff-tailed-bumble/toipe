@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{Read, Result, Stdin};
 
+use crate::config::ToipeConfig;
+
 pub enum Tty {
     Stdin(Stdin),
     File(File),
@@ -19,10 +21,9 @@ impl From<Stdin> for Tty {
 }
 
 impl Tty {
-    pub fn new() -> Result<Self> {
-        let stdin = std::io::stdin();
-        if termion::is_tty(&stdin) {
-            Ok(stdin.into())
+    pub fn new(config: &ToipeConfig) -> Result<Self> {
+        if config.is_stdin_tty {
+            Ok(std::io::stdin().into())
         } else {
             Ok(termion::get_tty()?.into())
         }

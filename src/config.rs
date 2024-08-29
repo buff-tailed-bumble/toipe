@@ -60,12 +60,15 @@ pub struct ToipeConfig {
     /// Whether to allow whitespace in words
     #[clap(long)]
     pub preserve_whitespace: bool,
+
+    #[clap(skip=termion::is_tty(&std::io::stdin().lock()))]
+    pub is_stdin_tty: bool,
 }
 
 impl ToipeConfig {
     /// Name of the text used for typing test
     pub fn text_name(&self) -> String {
-        if !termion::is_tty(&std::io::stdin().lock()) {
+        if !self.is_stdin_tty {
             "stdin".to_string()
         } else if let Some(wordlist_file) = &self.wordlist_file {
             format!("custom file `{}`", wordlist_file)

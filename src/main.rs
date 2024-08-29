@@ -6,7 +6,7 @@ use toipe::Toipe;
 
 fn main() -> Result<()> {
     let config = ToipeConfig::parse();
-    let mut tty = toipe::tty::Tty::new()?;
+    let mut tty = toipe::tty::Tty::new(&config)?;
     let mut toipe = Toipe::new(config)?;
     toipe.run(&mut tty)?;
     Ok(())
