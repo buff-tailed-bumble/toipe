@@ -23,7 +23,7 @@ impl RawWordSelector {
         for elem in iter {
             match elem {
                 Ok(word) => {
-                    if let Err(err) = trie.insert(&word.to_ascii_lowercase()) {
+                    if let Err(err) = trie.insert(&word) {
                         return Err(err.into());
                     }
                 }
@@ -52,14 +52,21 @@ pub trait WordSelector {
 
     /// Returns a [`Vec`] containing `num_words` words.
     fn new_words(&mut self, num_words: usize) -> Result<Vec<String>, io::Error> {
-        (0..num_words).map(|_| self.new_word()).collect()
+        let mut words = Vec::<String>::new();
+        for _ in 0..num_words {
+            let word = self.new_word()?;
+            for part in word.split_whitespace() {
+                words.push(part.to_string());
+            }
+        }
+        Ok(words)
     }
 }
 
 impl WordSelector for RawWordSelector {
     fn new_word(&mut self) -> Result<String, io::Error> {
         let mut rng = rand::thread_rng();
-        Ok(self.new_word_raw(&mut rng)?.to_ascii_lowercase())
+        Ok(self.new_word_raw(&mut rng)?)
     }
 }
 

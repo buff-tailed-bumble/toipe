@@ -57,9 +57,9 @@ pub struct ToipeConfig {
     #[clap(long)]
     pub no_hint: bool,
 
-    /// Whether to allow whitespace in words
+    /// Preserve punctuation and whitespace in words
     #[clap(long)]
-    pub preserve_whitespace: bool,
+    pub quote_mode: bool,
 
     #[clap(skip=termion::is_tty(&std::io::stdin().lock()))]
     pub is_stdin_tty: bool,

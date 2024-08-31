@@ -11,7 +11,7 @@ use crate::{
 
 pub struct WordStream {
     stream: Box<dyn Read>,
-    preserve_whitespace: bool,
+    is_quote_mode: bool,
 }
 
 impl WordStream {
@@ -35,21 +35,22 @@ impl WordStream {
 
         Ok(Self {
             stream,
-            preserve_whitespace: config.preserve_whitespace,
+            is_quote_mode: config.quote_mode,
         })
     }
 
     pub fn into_iter(self) -> impl Iterator<Item = Result<String, Error>> {
-        let preserve_whitespace = self.preserve_whitespace;
+        let is_quote_mode = self.is_quote_mode;
         let reader = BufReader::new(self.stream);
         reader
             .lines()
             .map(move |result| match result {
                 Ok(line) => {
-                    if preserve_whitespace {
+                    if is_quote_mode {
                         vec![Ok(line)].into_iter()
                     } else {
-                        line.split_whitespace()
+                        line.to_ascii_lowercase()
+                            .split_whitespace()
                             .map(|s| Ok(s.to_string()))
                             .collect::<Vec<_>>()
                             .into_iter()
