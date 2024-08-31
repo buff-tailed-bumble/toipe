@@ -298,7 +298,7 @@ impl ToipeTui {
         T: Display,
     {
         let len = text.as_ref().length() as u16;
-        write!(self.stdout, "{}", cursor::Left(len / 2),)?;
+        // write!(self.stdout, "{}", cursor::Left(len / 2),)?;
 
         // TODO: find a better way to enable this only in certain contexts
         if self.track_lines {
@@ -330,6 +330,7 @@ impl ToipeTui {
         U: Display,
     {
         let (sizex, sizey) = terminal_size()?;
+        let start_column = (sizex / 2).checked_sub(32).unwrap_or(0);
 
         let line_offset = lines.len() as u16 / 2;
 
@@ -337,7 +338,7 @@ impl ToipeTui {
             write!(
                 self.stdout,
                 "{}",
-                cursor::Goto(sizex / 2, sizey / 2 + (line_no as u16) - line_offset)
+                cursor::Goto(start_column, sizey / 2 + (line_no as u16) - line_offset)
             )?;
             self.display_a_line_raw(line.as_ref())?;
         }
@@ -381,15 +382,13 @@ impl ToipeTui {
         let mut line = Vec::new();
         let mut lines = Vec::new();
         let (terminal_width, terminal_height) = terminal_size()?;
-        // 40% of terminal width
-        let max_width = terminal_width * 2 / 5;
-        const MAX_WORDS_PER_LINE: usize = 10;
-        // eprintln!("max width is {}", max_width);
+
+        let max_width = 64;
 
         for word in words {
             max_word_len = std::cmp::max(max_word_len, word.len() + 1);
             let new_len = current_len + word.len() as u16 + 1;
-            if line.len() < MAX_WORDS_PER_LINE && new_len <= max_width {
+            if new_len <= max_width {
                 // add to line
                 line.push(word.clone());
                 current_len += word.len() as u16 + 1
