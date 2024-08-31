@@ -55,7 +55,7 @@ pub struct ToipeConfig {
 
     /// Whether to show hint for controls at the bottom of the screen
     #[clap(long)]
-    pub no_hint: bool,
+    pub show_hint: bool,
 
     /// Preserve punctuation and whitespace in words
     #[clap(long)]

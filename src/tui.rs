@@ -357,6 +357,7 @@ impl ToipeTui {
         U: Display,
     {
         let (sizex, sizey) = terminal_size()?;
+        let start_column = (sizex / 2).checked_sub(32).unwrap_or(0);
 
         let line_offset = lines.len() as u16;
         self.bottom_lines_len = lines.len();
@@ -365,7 +366,7 @@ impl ToipeTui {
             write!(
                 self.stdout,
                 "{}",
-                cursor::Goto(sizex / 2, sizey - 1 + (line_no as u16) - line_offset)
+                cursor::Goto(start_column, sizey - 1 + (line_no as u16) - line_offset)
             )?;
             self.display_a_line_raw(line.as_ref())?;
         }

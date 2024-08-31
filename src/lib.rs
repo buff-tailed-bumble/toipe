@@ -112,7 +112,7 @@ impl<'a> Toipe {
     }
 
     fn display_hint(&mut self) -> Result<()> {
-        if !self.config.no_hint {
+        if self.config.show_hint {
             self.tui.display_lines_bottom(&[&[
                 Text::from("ctrl-r").with_color(color::Blue),
                 Text::from(" to restart, ").with_faint(),
